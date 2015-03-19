@@ -9,7 +9,9 @@ public interface Token {
     int weight();
     boolean hasPrecedence(int prec);
     int nextPrecedence();
-    boolean isLineSeparator();
+    Scoping getScoping();
+
+    public enum Scoping { NONE, OPENING, CLOSING }
 
     public final class Dynamic implements Token {
         private final String value;
@@ -39,8 +41,8 @@ public interface Token {
         }
 
         @Override
-        public boolean isLineSeparator() {
-            return false;
+        public Scoping getScoping() {
+            return Scoping.NONE;
         }
 
         @Override
@@ -61,52 +63,48 @@ public interface Token {
                                 NO_ASSOC = null;
 
     public enum Static implements Token {
-        NL("\n", UTMOST, NO_ASSOC) {
-            @Override
-            public boolean isLineSeparator() {
-                return true;
-            }
-        },
-        SEMICOLON(";", UTMOST, NO_ASSOC) {
-            @Override
-            public boolean isLineSeparator() {
-                return false;
-            }
-        },
+        NL         ("\n",       UTMOST,      NO_ASSOC),
+        SEMICOLON  (";",        UTMOST,      NO_ASSOC),
+        PAREN_START("(",        UTMOST,      NO_ASSOC, Scoping.OPENING),
+        PAREN_END  (")",        UTMOST,      NO_ASSOC, Scoping.CLOSING),
+        BLOCK_START("DEBUT",    UTMOST,      NO_ASSOC, Scoping.OPENING),
+        BLOCK_END  ("FIN",      UTMOST,      NO_ASSOC, Scoping.CLOSING),
+        LIST_START ("[",        UTMOST,      NO_ASSOC, Scoping.OPENING),
+        LIST_END   ("]",        UTMOST,      NO_ASSOC, Scoping.CLOSING),
+        COMMA      (",",        UTMOST,      NO_ASSOC),
+        DECL_VAR   ("<-",       ZERO,        RIGHT_ASSOC),
+        DECL_FUN   ("FONCTION", UTMOST,      NO_ASSOC),
+        INC        ("++",       HIGHER,      NO_ASSOC),
+        DEC        ("--",       HIGHER,      NO_ASSOC),
+        MOD        ("%",        HIGH,        RIGHT_ASSOC),
+        POW        ("**",       HIGH,        RIGHT_ASSOC),
+        ADD        ("+",        LOW,         LEFT_ASSOC),
+        SUB        ("-",        LOW,         LEFT_ASSOC),
+        MUL        ("*",        NORMAL,      LEFT_ASSOC),
+        DIV        ("/",        NORMAL,      LEFT_ASSOC),
+        MORE_EQ    (">=",       LOWER,       LEFT_ASSOC),
+        MORE       (">",        LOWER,       LEFT_ASSOC),
+        LESS_EQ    ("<=",       LOWER,       LEFT_ASSOC),
+        LESS       ("<",        LOWER,       LEFT_ASSOC),
+        EQ         ("=",        LOWER,       LEFT_ASSOC),
+        NEQ        ("!=",       LOWER,       LEFT_ASSOC),
+        AND        ("ET",       LOWER,       LEFT_ASSOC),
+        OR         ("OU",       LOWER,       LEFT_ASSOC),
+        XOR        ("^",        LOWER,       LEFT_ASSOC),
+        NOT        ("!",        LOWER,       NO_ASSOC),
+        CAT        ("&",        LOWER,       LEFT_ASSOC),
+        ELSE       ("SINON",    UTMOST,      NO_ASSOC),
+        IF_START   ("SI",       UTMOST,      NO_ASSOC, Scoping.OPENING),
+        IF_END     ("FSI",      UTMOST,      NO_ASSOC, Scoping.CLOSING),
+        WHILE_START("TANTQUE",  UTMOST,      NO_ASSOC, Scoping.OPENING),
+        WHILE_END  ("FTQ",      UTMOST,      NO_ASSOC, Scoping.CLOSING),
+        EACH_START ("CHAQUE",   UTMOST,      NO_ASSOC, Scoping.OPENING),
+        EACH_END   ("FCHAQUE",  UTMOST,      NO_ASSOC, Scoping.CLOSING),
+        FOR_START  ("POUR",     UTMOST,      NO_ASSOC, Scoping.OPENING),
+        FOR_END    ("FPOUR",    UTMOST,      NO_ASSOC, Scoping.CLOSING),
 
-        PAREN_START("(",       UTMOST,      NO_ASSOC),
-        PAREN_END  (")",       UTMOST,      NO_ASSOC),
-        BLOCK_START("{",       UTMOST,      NO_ASSOC),
-        BLOCK_END  ("}",       UTMOST,      NO_ASSOC),
-        LIST_START ("[",       UTMOST,      NO_ASSOC),
-        LIST_END   ("]",       UTMOST,      NO_ASSOC),
-        COMMA      (",",       UTMOST,      NO_ASSOC),
-        DECL_VAR   ("<-",      ZERO,        RIGHT_ASSOC),
-        DECL_FUN   ("fun",     UTMOST,      NO_ASSOC),
-        INC        ("++",      HIGHER,      NO_ASSOC),
-        DEC        ("--",      HIGHER,      NO_ASSOC),
-        MOD        ("%",       HIGH,        RIGHT_ASSOC),
-        POW        ("**",      HIGH,        RIGHT_ASSOC),
-        ADD        ("+",       LOW,         LEFT_ASSOC),
-        SUB        ("-",       LOW,         LEFT_ASSOC),
-        MUL        ("*",       NORMAL,      LEFT_ASSOC),
-        DIV        ("/",       NORMAL,      LEFT_ASSOC),
-        MORE_EQ    (">=",      LOWER,       LEFT_ASSOC),
-        MORE       (">",       LOWER,       LEFT_ASSOC),
-        LESS_EQ    ("<=",      LOWER,       LEFT_ASSOC),
-        LESS       ("<",       LOWER,       LEFT_ASSOC),
-        EQ         ("=",       LOWER,       LEFT_ASSOC),
-        NEQ        ("!=",      LOWER,       LEFT_ASSOC),
-        AND        ("&&",      LOWER,       LEFT_ASSOC),
-        OR         ("||",      LOWER,       LEFT_ASSOC),
-        XOR        ("^",       LOWER,       LEFT_ASSOC),
-        NOT        ("!",       LOWER,       NO_ASSOC),
-        CAT        ("&",       LOWER,       LEFT_ASSOC),
-        ELSE       ("else",    UTMOST,      NO_ASSOC),
-        IF         ("if",      UTMOST,      NO_ASSOC),
-        WHILE      ("while",   UTMOST,      NO_ASSOC),
-        FOREACH    ("foreach", UTMOST,      NO_ASSOC),
-        FOR        ("for",     UTMOST,      NO_ASSOC),
+        VARIABLES("VARIABLES", UTMOST, NO_ASSOC),
+        ALGORITHME("ALGORITHME", UTMOST, NO_ASSOC),
         ;
 
         @Override
@@ -132,8 +130,9 @@ public interface Token {
             return precedence;
         }
 
-        public boolean isLineSeparator() {
-            return false;
+        @Override
+        public Scoping getScoping() {
+            return scoping;
         }
 
         public boolean isLeftAssoc() {
@@ -151,10 +150,18 @@ public interface Token {
         private final String value;
         private final int precedence;
         private final Boolean leftAssoc;
+        private final Scoping scoping;
         Static(String value, int precedence, Boolean leftAssoc) {
             this.value = value;
             this.precedence = precedence;
             this.leftAssoc = leftAssoc;
+            this.scoping = Scoping.NONE;
+        }
+        Static(String value, int precedence, Boolean leftAssoc, Scoping scoping) {
+            this.value = value;
+            this.precedence = precedence;
+            this.leftAssoc = leftAssoc;
+            this.scoping = scoping;
         }
         private static final Map<String, Token> tokens;
         static {

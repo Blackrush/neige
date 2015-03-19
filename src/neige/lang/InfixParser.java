@@ -94,10 +94,10 @@ public class InfixParser implements Parser {
                 case BLOCK_START:   return between(BLOCK_START, BLOCK_END).parseBlock();
                 case LIST_START:    return between(LIST_START,  LIST_END).parseList();
 
-                case IF:            return parseIf();
-                case WHILE:         return parseWhile();
-                case FOR:           return parseFor();
-                case FOREACH:       return parseForeach();
+                case IF_START:      return parseIf();
+                case WHILE_START:   return parseWhile();
+                case FOR_START:     return parseFor();
+                case EACH_START:    return parseForeach();
                 case DECL_FUN:      return parseDeclFun();
 
                 default:            return parseUnary(tok, parseOne());
@@ -130,6 +130,61 @@ public class InfixParser implements Parser {
                 toks.addLast(cur);
             }
             toks.removeLast(); // remove end
+
+            return new Context(toks);
+        }
+
+        Context takeUntil(Token.Static end) {
+            int delta = end.getScoping() == Scoping.CLOSING ? 1 : -1;
+            LinkedList<Token> toks = new LinkedList<Token>();
+            int remaining = 1;
+            while (true) {
+                Token tok = tokens.getFirst();
+
+                switch (tok.getScoping()) {
+                    case OPENING: remaining += delta; break;
+                    case CLOSING: remaining -= delta; break;
+                }
+
+                if (remaining <= 1 && tok == end) {
+                    break;
+                }
+
+                tokens.removeFirst();
+                toks.addLast(tok);
+            }
+
+            tokens.removeFirst();
+
+            return new Context(toks);
+        }
+
+        Context takeUntil(Token.Static... end) {
+            LinkedList<Token> toks = new LinkedList<Token>();
+            int remaining = 1;
+            outer: while (true) {
+                Token tok = tokens.getFirst();
+
+                switch (tok.getScoping()) {
+                    case OPENING: remaining++; break;
+                    case CLOSING: remaining--; break;
+                }
+
+                if (remaining <= 1) {
+                    for (Static anEnd : end) {
+                        if (tok == anEnd) {
+                            break outer;
+                        }
+                    }
+                }
+
+                tokens.removeFirst();
+                toks.addLast(tok);
+            }
+
+            if (end.length == 1) {
+                tokens.removeFirst();
+            }
 
             return new Context(toks);
         }
@@ -169,6 +224,8 @@ public class InfixParser implements Parser {
                 case NOT: return new NotExpression(exp);
                 case INC: return new IncExpression(exp);
                 case DEC: return new DecExpression(exp);
+
+                case ALGORITHME: return parseAlgorithme(exp);
             }
 
             throw new ParseException(tok.value() + " is not unary");
@@ -180,7 +237,7 @@ public class InfixParser implements Parser {
             BlockExpression block = BlockExpression.newEmpty();
             while (!tokens.isEmpty()) {
                 Expression exp = parse();
-                block.addBody(exp);
+                block.append(exp);
             }
             return block;
         }
@@ -203,30 +260,37 @@ public class InfixParser implements Parser {
         }
 
         Expression parseIf() {
-            isNextToken(IF);
+            isNextToken(IF_START);
             Expression test      = parse();
-            Expression body      = parse();
-            Expression otherwise = isNextToken(ELSE) ? parse() : NilExpression.i;
+
+            Context bodyCtx = takeUntil(ELSE, IF_END);
+            Expression otherwise = NilExpression.i;
+            if (isNextToken(ELSE)) {
+                Context otherwiseCtx = takeUntil(IF_END);
+                otherwise = otherwiseCtx.parseBlock();
+            }
+            Expression body = bodyCtx.parseBlock();
+
             return new IfExpression(test, body, otherwise);
         }
 
         Expression parseWhile() {
-            isNextToken(WHILE);
+            isNextToken(WHILE_START);
             Expression test = parse();
-            Expression body = parse();
+            Expression body = takeUntil(WHILE_END).parse();
             return new WhileExpression(test, body);
         }
 
         Expression parseFor() {
-            isNextToken(FOR);
+            isNextToken(FOR_START);
             Expression[] args = betweenParens().split(SEMICOLON, 3);
-            BlockExpression body = BlockExpression.wrapIfNeeded(parse());
+            BlockExpression body = takeUntil(FOR_END).parseBlock();
 
             Expression init = args[0];
             Expression test = args[1];
             Expression end = args[2];
 
-            body.addBody(end);
+            body.append(end);
 
             return BlockExpression.of(init, new WhileExpression(test, body));
         }
@@ -249,7 +313,7 @@ public class InfixParser implements Parser {
         }
 
         Expression parseForeach() {
-            isNextToken(FOREACH);
+            isNextToken(EACH_START);
 
             Expression exp = betweenParens().parse();
             if (!(exp instanceof DeclVarExpression)) {
@@ -257,7 +321,7 @@ public class InfixParser implements Parser {
             }
 
             DeclVarExpression generator = (DeclVarExpression) exp;
-            Expression body             = parse();
+            Expression body             = takeUntil(EACH_END).parseBlock();
 
             return new ForeachExpression(generator, body);
         }
@@ -266,9 +330,17 @@ public class InfixParser implements Parser {
             isNextToken(DECL_FUN);
             TermExpression id = (TermExpression) Literals.parse((Dynamic) popToken());
             List<TermExpression> args = betweenParens().parseList().ofTerms();
-            isNextToken(DECL_VAR);
-            Expression body = parse();
+            Expression variables = NilExpression.i;
+            if (isNextToken(VARIABLES)) {
+                variables = takeUntil(BLOCK_START).parseBlock();
+            }
+            BlockExpression body = takeUntil(BLOCK_END).parseBlock();
+            body.prepend(variables);
             return new DeclFunExpression(id, args, body);
+        }
+
+        Expression parseAlgorithme(Expression nomAlgo) {
+            return parse();
         }
     }
 }

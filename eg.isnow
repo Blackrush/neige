@@ -1,27 +1,40 @@
-fun fibLoop(n) {
-    acc <- 0
+ALGORITHME mdr
 
-    for (i <- 1; i <= n; ++i) {
-        acc <- acc + i
-    }
+FONCTION fibLoop(n)
+    VARIABLES
+        acc <- 0
+    DEBUT
+        POUR (i <- 1; i <= n; ++i)
+            acc <- acc + i
+        FPOUR
 
-    acc
-}
+        acc
+    FIN
 
-fun fibRec(n) {
-    if (n < 2) {
-        n
-    } else {
-        fibRe(n-1)+fibRec(n-2)
-    }
-}
+FONCTION fibRec(n)
+    DEBUT
+        SI (n < 2)
+            n
+        SINON
+            fibRe(n-1)+fibRec(n-2)
+        FSI
+    FIN
 
-ecrire(fibLoop(10))
-ecrire(fibRec(10))
+DEBUT
+    list <- [1, 2, 3]
 
-fun greet(name) {
-    ecrire("hello, " & name & "!")
-}
+    CHAQUE (x <- list)
+        ecrire(x)
+    FCHAQUE
 
-lire("name")
-greet(name)
+    ecrire(fibLoop(10))
+    ecrire(fibRec(10))
+
+    FONCTION greet(name)
+    DEBUT
+        ecrire("hello, " & name & "!")
+    FIN
+
+    lire("name")
+    greet(name)
+FIN

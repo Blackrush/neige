@@ -32,7 +32,7 @@ public final class BlockExpression extends Expression {
             return (BlockExpression) exp;
         }
         BlockExpression block = BlockExpression.newEmpty();
-        block.addBody(exp);
+        block.append(exp);
         return block;
     }
 
@@ -40,7 +40,11 @@ public final class BlockExpression extends Expression {
         return body;
     }
 
-    public void addBody(Expression exp) {
+    public void prepend(Expression exp) {
+        body.add(0, exp);
+    }
+
+    public void append(Expression exp) {
         if (exp == NilExpression.i) {
             return;
         }
@@ -75,7 +79,7 @@ public final class BlockExpression extends Expression {
     public Expression traverseVisit(ExpressionVisitor<Expression> visitor) {
         BlockExpression block = newEmpty(body.size());
         for (Expression expression : body) {
-            block.addBody(expression.traverseVisit(visitor));
+            block.append(expression.traverseVisit(visitor));
         }
         return visitor.visitBlock(block);
     }

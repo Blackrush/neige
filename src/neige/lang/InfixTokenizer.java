@@ -193,11 +193,11 @@ public class InfixTokenizer {
             @Override
             public String visitIf(IfExpression exp) {
                 if (exp.getOtherwise() == NilExpression.i) {
-                    return Token.Static.IF.value() + " " +
+                    return Token.Static.IF_START.value() + " " +
                            show(exp.getTest()) + " " +
                            show(exp.getBody());
                 } else {
-                    return Token.Static.IF.value() + " " +
+                    return Token.Static.IF_START.value() + " " +
                            show(exp.getTest()) + " " +
                            show(exp.getBody()) + " " +
                            Token.Static.ELSE.value() + " " +
@@ -207,14 +207,14 @@ public class InfixTokenizer {
 
             @Override
             public String visitWhile(WhileExpression exp) {
-                return Token.Static.WHILE.value() + " " +
+                return Token.Static.WHILE_START.value() + " " +
                        exp.getTest().visit(this) + " " +
                        exp.getBody().visit(this);
             }
 
             @Override
             public String visitForeach(ForeachExpression exp) {
-                return Token.Static.FOREACH.value() + " " +
+                return Token.Static.EACH_END.value() + " " +
                        exp.getGenerator().visit(this) + " " +
                        exp.getBody().visit(this);
             }
