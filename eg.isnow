@@ -1,40 +1,21 @@
 ALGORITHME mdr
-
-FONCTION fibLoop(n)
+FONCTION genere(n)
     VARIABLES
-        acc <- 0
+        nums <- []
     DEBUT
         POUR (i <- 1; i <= n; ++i)
-            acc <- acc + i
+            append(nums, i)
         FPOUR
 
-        acc
-    FIN
-
-FONCTION fibRec(n)
-    DEBUT
-        SI (n < 2)
-            n
-        SINON
-            fibRe(n-1)+fibRec(n-2)
-        FSI
+        nums
     FIN
 
 DEBUT
-    list <- [1, 2, 3]
+    lire("max")
 
-    CHAQUE (x <- list)
-        ecrire(x)
+    CHAQUE (num <- genere(int(max)))
+        SI (isPrimary(num))
+            ecrire(num)
+        FSI
     FCHAQUE
-
-    ecrire(fibLoop(10))
-    ecrire(fibRec(10))
-
-    FONCTION greet(name)
-    DEBUT
-        ecrire("hello, " & name & "!")
-    FIN
-
-    lire("name")
-    greet(name)
 FIN

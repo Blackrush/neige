@@ -100,8 +100,47 @@ public class InfixParser implements Parser {
                 case EACH_START:    return parseForeach();
                 case DECL_FUN:      return parseDeclFun();
 
+                case VARIABLES:     return parseVariables();
+                case ALGORITHME:    return parseAlgorithme();
+
                 default:            return parseUnary(tok, parseOne());
             }
+        }
+
+        Expression parseBin(Token tok, Expression lhs, Expression rhs) {
+            switch ((Token.Static) tok) {
+                case CAT:       return new CatStrExpression(lhs, rhs);
+                case ADD:       return new AddExpression(lhs, rhs);
+                case SUB:       return new SubExpression(lhs, rhs);
+                case MUL:       return new MulExpression(lhs, rhs);
+                case DIV:       return new DivExpression(lhs, rhs);
+                case MOD:       return new ModExpression(lhs, rhs);
+                case POW:       return new PowExpression(lhs, rhs);
+                case MORE:      return new MoreExpression(lhs, rhs);
+                case MORE_EQ:   return new MoreEQExpression(lhs, rhs);
+                case LESS:      return new LessExpression(lhs, rhs);
+                case LESS_EQ:   return new LessEQExpression(lhs, rhs);
+                case EQ:        return new EQExpression(lhs, rhs);
+                case NEQ:       return new NotEQExpression(lhs, rhs);
+                case AND:       return new AndExpression(lhs, rhs);
+                case OR:        return new OrExpression(lhs, rhs);
+                case XOR:       return new XorExpression(lhs, rhs);
+                case DECL_VAR:  return new DeclVarExpression((TermExpression) lhs, rhs);
+            }
+
+            throw new ParseException(tok.value() + " is not binary");
+        }
+
+        Expression parseUnary(Token.Static tok, Expression exp) {
+            switch (tok) {
+                case ADD: return new UnaryAddExpression(exp);
+                case SUB: return new UnaryMinExpression(exp);
+                case NOT: return new NotExpression(exp);
+                case INC: return new IncExpression(exp);
+                case DEC: return new DecExpression(exp);
+            }
+
+            throw new ParseException(tok.value() + " is not unary");
         }
 
         Token popToken() {
@@ -193,44 +232,6 @@ public class InfixParser implements Parser {
             return between(PAREN_START, PAREN_END);
         }
 
-        Expression parseBin(Token tok, Expression lhs, Expression rhs) {
-            switch ((Token.Static) tok) {
-                case CAT:       return new CatStrExpression(lhs, rhs);
-                case ADD:       return new AddExpression(lhs, rhs);
-                case SUB:       return new SubExpression(lhs, rhs);
-                case MUL:       return new MulExpression(lhs, rhs);
-                case DIV:       return new DivExpression(lhs, rhs);
-                case MOD:       return new ModExpression(lhs, rhs);
-                case POW:       return new PowExpression(lhs, rhs);
-                case MORE:      return new MoreExpression(lhs, rhs);
-                case MORE_EQ:   return new MoreEQExpression(lhs, rhs);
-                case LESS:      return new LessExpression(lhs, rhs);
-                case LESS_EQ:   return new LessEQExpression(lhs, rhs);
-                case EQ:        return new EQExpression(lhs, rhs);
-                case NEQ:       return new NotEQExpression(lhs, rhs);
-                case AND:       return new AndExpression(lhs, rhs);
-                case OR:        return new OrExpression(lhs, rhs);
-                case XOR:       return new XorExpression(lhs, rhs);
-                case DECL_VAR:  return new DeclVarExpression((TermExpression) lhs, rhs);
-            }
-
-            throw new ParseException(tok.value() + " is not binary");
-        }
-
-        Expression parseUnary(Token.Static tok, Expression exp) {
-            switch (tok) {
-                case ADD: return new UnaryAddExpression(exp);
-                case SUB: return new UnaryMinExpression(exp);
-                case NOT: return new NotExpression(exp);
-                case INC: return new IncExpression(exp);
-                case DEC: return new DecExpression(exp);
-
-                case ALGORITHME: return parseAlgorithme(exp);
-            }
-
-            throw new ParseException(tok.value() + " is not unary");
-        }
-
         BlockExpression parseBlock() {
             isNextToken(BLOCK_START);
 
@@ -268,6 +269,8 @@ public class InfixParser implements Parser {
             if (isNextToken(ELSE)) {
                 Context otherwiseCtx = takeUntil(IF_END);
                 otherwise = otherwiseCtx.parseBlock();
+            } else {
+                tokens.removeFirst();
             }
             Expression body = bodyCtx.parseBlock();
 
@@ -339,8 +342,15 @@ public class InfixParser implements Parser {
             return new DeclFunExpression(id, args, body);
         }
 
-        Expression parseAlgorithme(Expression nomAlgo) {
-            return parse();
+        Expression parseVariables() {
+            BlockExpression decls = takeUntil(BLOCK_START).parseBlock();
+            tokens.addFirst(BLOCK_START);
+            return decls;
+        }
+
+        Expression parseAlgorithme() {
+            parseOne();
+            return NilExpression.i;
         }
     }
 }

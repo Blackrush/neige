@@ -151,4 +151,9 @@ public final class Stdlib {
         list.addExp(exp);
         return NilExpression.i;
     }
+
+    @NeigeFun
+    public static BoolExpression isPrimary(InterpContext ctx, IntExpression exp) {
+        return BoolExpression.of(exp.getValue().isProbablePrime(2147483646));
+    }
 }

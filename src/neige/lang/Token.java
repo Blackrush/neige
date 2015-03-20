@@ -103,7 +103,7 @@ public interface Token {
         FOR_START  ("POUR",     UTMOST,      NO_ASSOC, Scoping.OPENING),
         FOR_END    ("FPOUR",    UTMOST,      NO_ASSOC, Scoping.CLOSING),
 
-        VARIABLES("VARIABLES", UTMOST, NO_ASSOC),
+        VARIABLES("VARIABLES", LOW, RIGHT_ASSOC),
         ALGORITHME("ALGORITHME", UTMOST, NO_ASSOC),
         ;
 
